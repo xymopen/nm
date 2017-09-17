@@ -1,0 +1,18 @@
+{
+	"name": "hello-world-nelder-mead-method",
+	"version": "0.0.1",
+	"description": "hello World example of Nelder-Mead method",
+	"main": "./src/main.js",
+	"scripts": {
+		"run": "node ./src/main.js"
+	},
+	"author": "xymopen",
+	"license": "BSD 2-Causes",
+	"dependencies": {
+		"mathjs": "^3.13.3"
+	},
+	"devDependencies": {
+		"babel-cli": "^6.24.1",
+		"babel-preset-latest": "^6.24.1"
+	}
+}
