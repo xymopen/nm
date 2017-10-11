@@ -131,7 +131,7 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
  * 
  * @param {Array< Array< Number > >} vertices
  * @param {function( Array< Number >, function( ?Error, Number ) )} measureCallback
- * 	a function with a node-style callback to evluate the error of a vertex from target. it should cache its results.
+ * 	a node-style async function to evluate the error of a vertex from target. it should cache its results.
  * @param {function( ?Error, Array< Array< Number > > )} callback
  * 	a node-style callback to receive the new iteration of vertices
  * @param {Number} [a] - alpha, it should gt 0

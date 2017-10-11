@@ -1,13 +1,13 @@
-
 /**
  * make a function cache its return value
  * @param {function} fn
+ * @param {function>} hash - calculate the hash of the arguments as key of map
  */
-function memorize( fn ) {
+function memorize( fn, hash = JSON.stringify ) {
 	let returns = new Map(), throws = new Map();;
 
 	function memorized() {
-		let argsKey = JSON.stringify( arguments );
+		let argsKey = hash( arguments );
 
 		if ( throws.has( argsKey ) ) {
 			throw throws.get( argsKey );
@@ -28,8 +28,6 @@ function memorize( fn ) {
 
 			return ret;
 		}
-
-		
 	}
 
 	memorized.refresh = function refresh() {
@@ -40,10 +38,11 @@ function memorize( fn ) {
 };
 
 /**
- * make function with a node-style callback cache its return value
+ * make a node-style async function cache its return value
  * @param {function} fn
+ * @param {function>} hash - calculate the hash of the arguments as key of map
  */
-function nMemorize( fn ) {
+function nMemorize( fn, hash = JSON.stringify ) {
 	let returns = new Map(), throws = new Map();
 
 	function memorized() {
@@ -55,21 +54,20 @@ function nMemorize( fn ) {
 			callback = function () { };
 		}
 
-		let argsKey = JSON.stringify( args ),
-			ret = returns.get( argsKey )
+		let argsKey = hash( args );
 
 		if ( throws.has( argsKey ) ) {
 			callback( throws.get( argsKey ), null );
 		} else if ( returns.has( argsKey ) ) {
 			callback( null, returns.get( argsKey ) );
 		} else {
-			fn( ...args, function ( error, result ) {
+			fn( ...args, function ( error, ret ) {
 				if ( error ) {
 					throws.set( argsKey, error );
 					callback( error, null );
 				} else {
-					returns.set( argsKey, result );
-					callback( null, result );
+					returns.set( argsKey, ret );
+					callback( null, ret );
 				}
 			} );
 		}
