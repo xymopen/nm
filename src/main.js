@@ -36,28 +36,28 @@ const randomVertex = () =>
 		.map( idx => Math.floor( Math.random() * 0x0100 ) );
 
 const lose = memorize( vertex => {
-	let ret = m.subtract( vertex, target ).reduce(( loss, diff ) =>
+	let ret = m.subtract( vertex, target ).reduce( ( loss, diff ) =>
 		loss + Math.pow( diff, 2 ), 0 );
 
-	console.log( `Vertex ${ visibleStr( vertex2str( vertex ) ) } loses ${ ret }` );
+	console.log( `Vertex ${ visibleStr( vertex2str( vertex ) ) } weights ${ ret }` );
 
 	return ret;
 } );
 
 const loseAsync = memorize( vertex => {
-	let ret = m.subtract( vertex, target ).reduce(( loss, diff ) =>
+	let ret = m.subtract( vertex, target ).reduce( ( loss, diff ) =>
 		loss + Math.pow( diff, 2 ), 0 );
 
-	console.log( `Vertex ${ visibleStr( vertex2str( vertex ) ) } loses ${ ret }` );
+	console.log( `Vertex ${ visibleStr( vertex2str( vertex ) ) } weights ${ ret }` );
 
 	return Promise.resolve( ret );
 } );
 
-const loseCallback = nMemorize(( vertex, callback ) => {
-	let ret = m.subtract( vertex, target ).reduce(( loss, diff ) =>
+const loseCallback = nMemorize( ( vertex, callback ) => {
+	let ret = m.subtract( vertex, target ).reduce( ( loss, diff ) =>
 		loss + Math.pow( diff, 2 ), 0 );
 
-	console.log( `Vertex ${ visibleStr( vertex2str( vertex ) ) } loses ${ ret }` );
+	console.log( `Vertex ${ visibleStr( vertex2str( vertex ) ) } weights ${ ret }` );
 
 	callback( null, ret );
 } );
@@ -65,7 +65,7 @@ const loseCallback = nMemorize(( vertex, callback ) => {
 const targetStr = "hello World!";
 const target = str2vertex( targetStr );
 
-let vertices = Array.from( range( target.length + 1 ) ).map(() => randomVertex() );
+let vertices = Array.from( range( target.length + 1 ) ).map( () => randomVertex() );
 
 let main = () => {
 	for ( let iteration = 0; iteration < 1e5; iteration += 1 ) {
@@ -120,8 +120,7 @@ let mainGen = () => {
 	}
 }
 
-/*
-let mainAsyncGen = () => {
+let mainAsyncGen = async () => {
 	let iteration = 0;
 
 	for await ( let _vertices of nmAsyncGen( vertices, loseAsync ) ) {
@@ -134,6 +133,5 @@ let mainAsyncGen = () => {
 		}
 	}
 }
-*/
 
 main();
