@@ -22,22 +22,20 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 		// centralize
 		centroid = m.mean( vertices.slice( 0, -1 ), 0 ),
 		// reflection
-		// to distinguish from 'error' thrown by program, use 'disturbance' in source
-		// why these statistics terms have so many letter!
 		mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) ),
-		bestDisturbance = measure( best ),
-		worserDisturbance = measure( worser ),
-		worstDisturbance = measure( worst ),
-		mirrorDisturbance = measure( mirror );
+		bestWeight = measure( best ),
+		worserWeight = measure( worser ),
+		worstWeight = measure( worst ),
+		mirrorWeight = measure( mirror );
 
-	if ( bestDisturbance <= mirrorDisturbance && mirrorDisturbance <= worserDisturbance ) {
+	if ( bestWeight <= mirrorWeight && mirrorWeight <= worserWeight ) {
 		vertices.splice( vertices.length - 1, 1, mirror );
-	} else if ( mirrorDisturbance < bestDisturbance ) {
+	} else if ( mirrorWeight < bestWeight ) {
 		// expansion
 		let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) ),
-			expansionDisturbance = measure( expansion );
+			expansionWeight = measure( expansion );
 
-		if ( expansionDisturbance < mirrorDisturbance ) {
+		if ( expansionWeight < mirrorWeight ) {
 			vertices.splice( vertices.length - 1, 1, expansion );
 		} else {
 			vertices.splice( vertices.length - 1, 1, mirror );
@@ -45,9 +43,9 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	} else {
 		// contraction
 		let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) ),
-			contractionDisturbance = measure( contraction );
+			contractionWeight = measure( contraction );
 
-		if ( contractionDisturbance < worstDisturbance ) {
+		if ( contractionWeight < worstWeight ) {
 			vertices.splice( vertices.length - 1, 1, contraction );
 		} else {
 			// shrink
@@ -74,14 +72,14 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
  */
 async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	// order
-	let disturbances = new Map();
+	let weights = new Map();
 
 	await Promise.all( vertices.map( async vertex =>
-		disturbances.set( vertex, await measureAsync( vertex ) )
+		weights.set( vertex, await measureAsync( vertex ) )
 	) );
 
 	// deduplicate
-	vertices = vertices.slice().sort(( a, b ) => disturbances.get( a ) - disturbances.get( b ) );
+	vertices = vertices.slice().sort(( a, b ) => weights.get( a ) - weights.get( b ) );
 
 	let best = vertices[ 0 ],
 		worser = vertices[ vertices.length - 2 ],
@@ -90,19 +88,19 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 		centroid = m.mean( vertices.slice( 0, -1 ), 0 ),
 		// reflection
 		mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) ),
-		bestDisturbance = disturbances.get( best ),
-		worserDisturbance = disturbances.get( worser ),
-		worstDisturbance = disturbances.get( worst ),
-		mirrorDisturbance = await measureAsync( mirror );
+		bestWeight = weights.get( best ),
+		worserWeight = weights.get( worser ),
+		worstWeight = weights.get( worst ),
+		mirrorWeight = await measureAsync( mirror );
 
-	if ( bestDisturbance <= mirrorDisturbance && mirrorDisturbance <= worserDisturbance ) {
+	if ( bestWeight <= mirrorWeight && mirrorWeight <= worserWeight ) {
 		vertices.splice( vertices.length - 1, 1, mirror );
-	} else if ( mirrorDisturbance < bestDisturbance ) {
+	} else if ( mirrorWeight < bestWeight ) {
 		// expansion
 		let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) ),
-			expansionDisturbance = await measureAsync( expansion );
+			expansionWeight = await measureAsync( expansion );
 
-		if ( expansionDisturbance < mirrorDisturbance ) {
+		if ( expansionWeight < mirrorWeight ) {
 			vertices.splice( vertices.length - 1, 1, expansion );
 		} else {
 			vertices.splice( vertices.length - 1, 1, mirror );
@@ -110,9 +108,9 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 	} else {
 		// contraction
 		let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) ),
-			contractionDisturbance = await measureAsync( contraction );
+			contractionWeight = await measureAsync( contraction );
 
-		if ( contractionDisturbance < worstDisturbance ) {
+		if ( contractionWeight < worstWeight ) {
 			vertices.splice( vertices.length - 1, 1, contraction );
 		} else {
 			// shrink
@@ -128,7 +126,7 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 
 /**
  * callback version of Nelder Mead method
- * 
+ *
  * @param {Array< Array< Number > >} vertices
  * @param {function( Array< Number >, function( ?Error, Number ) )} measureCallback
  * 	a node-style async function to evluate the error of a vertex from target. it should cache its results.
@@ -141,18 +139,18 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
  */
 function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	// order
-	let disturbances = new Map(), len = vertices.length;
+	let weights = new Map(), len = vertices.length;
 
-	vertices.forEach( vertex => measureCallback( vertex, ( error, disturbance ) => {
+	vertices.forEach( vertex => measureCallback( vertex, ( error, weight ) => {
 		if ( error ) {
 			callback( error, null );
 		} else {
-			disturbances.set( vertex, disturbance );
+			weights.set( vertex, weight );
 			len -= 1;
 
 			if ( 0 === len ) {
 				// deduplicate
-				vertices = vertices.slice().sort(( a, b ) => disturbances.get( a ) - disturbances.get( b ) );
+				vertices = vertices.slice().sort(( a, b ) => weights.get( a ) - weights.get( b ) );
 
 				let best = vertices[ 0 ],
 					worser = vertices[ vertices.length - 2 ],
@@ -161,27 +159,27 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 					centroid = m.mean( vertices.slice( 0, -1 ), 0 ),
 					// reflection
 					mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) ),
-					bestDisturbance = disturbances.get( best ),
-					worserDisturbance = disturbances.get( worser ),
-					worstDisturbance = disturbances.get( worst );
+					bestWeight = weights.get( best ),
+					worserWeight = weights.get( worser ),
+					worstWeight = weights.get( worst );
 
-				measureCallback( mirror, ( error, mirrorDisturbance ) => {
+				measureCallback( mirror, ( error, mirrorWeight ) => {
 					if ( error ) {
 						callback( error, null );
 					} else {
-						if ( bestDisturbance <= mirrorDisturbance && mirrorDisturbance <= worserDisturbance ) {
+						if ( bestWeight <= mirrorWeight && mirrorWeight <= worserWeight ) {
 							vertices.splice( vertices.length - 1, 1, mirror );
 
 							callback( null, vertices );
-						} else if ( mirrorDisturbance < bestDisturbance ) {
+						} else if ( mirrorWeight < bestWeight ) {
 							// expansion
 							let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
 
-							measureCallback( expansion, ( error, expansionDisturbance ) => {
+							measureCallback( expansion, ( error, expansionWeight ) => {
 								if ( error ) {
 									callback( error, null );
 								} else {
-									if ( expansionDisturbance < mirrorDisturbance ) {
+									if ( expansionWeight < mirrorWeight ) {
 										vertices.splice( vertices.length - 1, 1, expansion );
 									} else {
 										vertices.splice( vertices.length - 1, 1, mirror );
@@ -194,11 +192,11 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 							// contraction
 							let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) );
 
-							measureCallback( contraction, ( error, contractionDisturbance ) => {
+							measureCallback( contraction, ( error, contractionWeight ) => {
 								if ( error ) {
 									callback( error, null );
 								} else {
-									if ( contractionDisturbance < worstDisturbance ) {
+									if ( contractionWeight < worstWeight ) {
 										vertices.splice( vertices.length - 1, 1, contraction );
 									} else {
 										// shrink
