@@ -1,29 +1,37 @@
+/// <reference lib="es2018.asynciterable" />
+
 // import m from "mathjs";
 const m = require( "mathjs" );
 
 /**
  * Nelder Mead method
- * @param {Array< Array< Number > >} vertices
- * @param {function( Array< Number > ):Number} measure
- * 	a function to evluate the error of a vertex from target. it should cache its results.
- * @param {Number} [a] - alpha, it should gt 0
- * @param {Number} [g] - gamma, it should gt 1
- * @param {Number} [r] - rho, it should gt 0 and lte 0.5
- * @param {Number} [s] - sigma
- * @returns {Array< Array< Number > >} new iteration of vertices
+ * @param {number[][]} vertices
+ * @param {(vertex: number[]) => number} measure
+ * 	Evluate the weight of a vertex. Cache its return values for better perf.
+ * @param {number} [a] - Alpha, gt 0
+ * @param {number} [g] - Gamma, gt 1
+ * @param {number} [r] - Rho, gt 0 and lte 0.5
+ * @param {number} [s] - Sigma
+ * @returns {number[][]} - Next iteration of vertices
  */
 function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	// deduplicate and order
-	vertices = vertices.slice().sort(( a, b ) => measure( a ) - measure( b ) );
+	vertices = vertices.slice().sort( ( a, b ) => measure( a ) - measure( b ) );
 
 	let best = vertices[ 0 ],
 		worser = vertices[ vertices.length - 2 ],
-		worst = vertices[ vertices.length - 1 ],
-		// centralize
-		centroid = m.mean( vertices.slice( 0, -1 ), 0 ),
-		// reflection
-		mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) ),
-		bestWeight = measure( best ),
+		worst = vertices[ vertices.length - 1 ];
+
+	// centralize
+	/** @type {number[]} */
+	let centroid = m.mean( vertices.slice( 0, -1 ), 0 );
+
+	// reflection
+	/** @type {number[]} */
+	// @ts-ignore
+	let mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
+
+	let bestWeight = measure( best ),
 		worserWeight = measure( worser ),
 		worstWeight = measure( worst ),
 		mirrorWeight = measure( mirror );
@@ -32,8 +40,10 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 		vertices.splice( vertices.length - 1, 1, mirror );
 	} else if ( mirrorWeight < bestWeight ) {
 		// expansion
-		let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) ),
-			expansionWeight = measure( expansion );
+		/** @type {number[]} */
+		// @ts-ignore
+		let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
+		let expansionWeight = measure( expansion );
 
 		if ( expansionWeight < mirrorWeight ) {
 			vertices.splice( vertices.length - 1, 1, expansion );
@@ -42,14 +52,17 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 		}
 	} else {
 		// contraction
-		let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) ),
-			contractionWeight = measure( contraction );
+		/** @type {number[]} */
+		// @ts-ignore
+		let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) )
+		let contractionWeight = measure( contraction );
 
 		if ( contractionWeight < worstWeight ) {
 			vertices.splice( vertices.length - 1, 1, contraction );
 		} else {
 			// shrink
-			vertices = vertices.slice( 1 ).map( vertex =>
+			vertices = vertices.slice( 1 ).map( /** @return {number[]} */ vertex =>
+				// @ts-ignore
 				m.add( best, m.multiply( s, m.subtract( vertex, best ) ) ) );
 
 			vertices.unshift( best );
@@ -60,15 +73,15 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 };
 
 /**
- * async version of Nelder Mead method
- * @param {Array< Array< Number > >} vertices
- * @param {function( Array< Number > ):Promise< Number >} measureAsync
- * 	an async function to evluate the error of a vertex from target. it should cache its results.
- * @param {Number} [a] - alpha, it should gt 0
- * @param {Number} [g] - gamma, it should gt 1
- * @param {Number} [r] - rho, it should gt 0 and lte 0.5
- * @param {Number} [s] - sigma
- * @returns {Promise< Array< Array< Number > > >} new iteration of vertices
+ * Async Nelder Mead method
+ * @param {number[][]} vertices
+ * @param {(vertex: number[]) => Promise<number>} measureAsync
+ * 	Async evluate the weight of a vertex. Cache its return values for better perf.
+ * @param {number} [a] - Alpha, gt 0
+ * @param {number} [g] - Gamma, gt 1
+ * @param {number} [r] - Rho, gt 0 and lte 0.5
+ * @param {number} [s] - Sigma
+ * @returns {Promise<number[][]>} - Next iteration of vertices
  */
 async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	// order
@@ -79,16 +92,22 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 	) );
 
 	// deduplicate
-	vertices = vertices.slice().sort(( a, b ) => weights.get( a ) - weights.get( b ) );
+	vertices = vertices.slice().sort( ( a, b ) => weights.get( a ) - weights.get( b ) );
 
 	let best = vertices[ 0 ],
 		worser = vertices[ vertices.length - 2 ],
-		worst = vertices[ vertices.length - 1 ],
-		// centralize
-		centroid = m.mean( vertices.slice( 0, -1 ), 0 ),
-		// reflection
-		mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) ),
-		bestWeight = weights.get( best ),
+		worst = vertices[ vertices.length - 1 ];
+
+	// centralize
+	/** @type {number[]} */
+	let centroid = m.mean( vertices.slice( 0, -1 ), 0 );
+
+	// reflection
+	/** @type {number[]} */
+	// @ts-ignore
+	let mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
+
+	let bestWeight = weights.get( best ),
 		worserWeight = weights.get( worser ),
 		worstWeight = weights.get( worst ),
 		mirrorWeight = await measureAsync( mirror );
@@ -97,8 +116,10 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 		vertices.splice( vertices.length - 1, 1, mirror );
 	} else if ( mirrorWeight < bestWeight ) {
 		// expansion
-		let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) ),
-			expansionWeight = await measureAsync( expansion );
+		/** @type {number[]} */
+		// @ts-ignore
+		let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
+		let expansionWeight = await measureAsync( expansion );
 
 		if ( expansionWeight < mirrorWeight ) {
 			vertices.splice( vertices.length - 1, 1, expansion );
@@ -107,14 +128,17 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 		}
 	} else {
 		// contraction
-		let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) ),
-			contractionWeight = await measureAsync( contraction );
+		/** @type {number[]} */
+		// @ts-ignore
+		let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) );
+		let contractionWeight = await measureAsync( contraction );
 
 		if ( contractionWeight < worstWeight ) {
 			vertices.splice( vertices.length - 1, 1, contraction );
 		} else {
 			// shrink
-			vertices = vertices.slice( 1 ).map( vertex =>
+			vertices = vertices.slice( 1 ).map( /** @return {number[]} */ vertex =>
+				// @ts-ignore
 				m.add( best, m.multiply( s, m.subtract( vertex, best ) ) ) );
 
 			vertices.unshift( best );
@@ -125,17 +149,19 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 };
 
 /**
- * callback version of Nelder Mead method
- *
- * @param {Array< Array< Number > >} vertices
- * @param {function( Array< Number >, function( ?Error, Number ) )} measureCallback
- * 	a node-style async function to evluate the error of a vertex from target. it should cache its results.
- * @param {function( ?Error, Array< Array< Number > > )} callback
- * 	a node-style callback to receive the new iteration of vertices
- * @param {Number} [a] - alpha, it should gt 0
- * @param {Number} [g] - gamma, it should gt 1
- * @param {Number} [r] - rho, it should gt 0 and lte 0.5
- * @param {Number} [s] - sigma
+ * Callback Nelder Mead method
+ * @param {number[][]} vertices
+ * @param {(
+ * 	vertex: number[],
+ * 	callback:
+ * 		( error: Error| null, weight: number ) => void
+ * ) => void} measureCallback
+ * 	Callback for evluate the weight of a vertex. Cache its return values for better perf.
+ * @param {( error: Error | null, vertices: number[][] ) => void} callback
+ * @param {number} [a] - Alpha, gt 0
+ * @param {number} [g] - Gamma, gt 1
+ * @param {number} [r] - Rho, gt 0 and lte 0.5
+ * @param {number} [s] - Sigma
  */
 function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	// order
@@ -150,16 +176,22 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 
 			if ( 0 === len ) {
 				// deduplicate
-				vertices = vertices.slice().sort(( a, b ) => weights.get( a ) - weights.get( b ) );
+				vertices = vertices.slice().sort( ( a, b ) => weights.get( a ) - weights.get( b ) );
 
 				let best = vertices[ 0 ],
 					worser = vertices[ vertices.length - 2 ],
-					worst = vertices[ vertices.length - 1 ],
-					// centralize
-					centroid = m.mean( vertices.slice( 0, -1 ), 0 ),
-					// reflection
-					mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) ),
-					bestWeight = weights.get( best ),
+					worst = vertices[ vertices.length - 1 ];
+
+				// centralize
+				/** @type {number[]} */
+				let centroid = m.mean( vertices.slice( 0, -1 ), 0 );
+
+				// reflection
+				/** @type {number[]} */
+				// @ts-ignore
+				let mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
+
+				let bestWeight = weights.get( best ),
 					worserWeight = weights.get( worser ),
 					worstWeight = weights.get( worst );
 
@@ -173,6 +205,8 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 							callback( null, vertices );
 						} else if ( mirrorWeight < bestWeight ) {
 							// expansion
+							/** @type {number[]} */
+							// @ts-ignore
 							let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
 
 							measureCallback( expansion, ( error, expansionWeight ) => {
@@ -190,6 +224,8 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 							} );
 						} else {
 							// contraction
+							/** @type {number[]} */
+							// @ts-ignore
 							let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) );
 
 							measureCallback( contraction, ( error, contractionWeight ) => {
@@ -200,7 +236,8 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 										vertices.splice( vertices.length - 1, 1, contraction );
 									} else {
 										// shrink
-										vertices = vertices.slice( 1 ).map( vertex =>
+										vertices = vertices.slice( 1 ).map( /** @return {number[]} */ vertex =>
+											// @ts-ignore
 											m.add( best, m.multiply( s, m.subtract( vertex, best ) ) ) );
 
 										vertices.unshift( best );
@@ -218,15 +255,15 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 };
 
 /**
- * generator version of Nelder Mead method
- * @param {Array< Array< Number > >} vertices
- * @param {function( Array< Number > ):Number} measure
- * 	a function to evluate the error of a vertex from target. it should cache its results.
- * @param {Number} [a] - alpha, it should gt 0
- * @param {Number} [g] - gamma, it should gt 1
- * @param {Number} [r] - rho, it should gt 0 and lte 0.5
- * @param {Number} [s] - sigma
- * @yields {Array< Array< Number > >} new iteration of vertices
+ * Generator iteration of Nelder Mead method
+ * @param {number[][]} vertices
+ * @param {(vertex: number[]) => number} measure
+ * 	Evluate the weight of a vertex. Cache its return values for better perf.
+ * @param {number} [a] - Alpha, gt 0
+ * @param {number} [g] - Gamma, gt 1
+ * @param {number} [r] - Rho, gt 0 and lte 0.5
+ * @param {number} [s] - Sigma
+ * @yields {number[][]} - Next iteration of vertices
  */
 function* nmGen( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	for ( ; ; ) {
@@ -236,26 +273,22 @@ function* nmGen( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 };
 
 /**
- * async generator version of Nelder Mead method
- * @param {Array< Array< Number > >} vertices
- * @param {function( Array< Number > ):Promise< Number >} measureAsync
- * 	an async function to evluate the error of a vertex from target. it should cache its results.
- * @param {Number} [a] - alpha, it should gt 0
- * @param {Number} [g] - gamma, it should gt 1
- * @param {Number} [r] - rho, it should gt 0 and lte 0.5
- * @param {Number} [s] - sigma
- * @yields {Array< Array< Number > >} new iteration of vertices
+ * Async Generator iteration of Nelder Mead method
+ * @param {number[][]} vertices
+ * @param {(vertex: number[]) => Promise<number>} measureAsync
+ * 	Async evluate the weight of a vertex. Cache its return values for better perf.
+ * @param {number} [a] - Alpha, gt 0
+ * @param {number} [g] - Gamma, gt 1
+ * @param {number} [r] - Rho, gt 0 and lte 0.5
+ * @param {number} [s] - Sigma
+ * @yields {Promise<number[][]>} - Next iteration of vertices
  */
-/*
 async function* nmAsyncGen( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	for ( ; ; ) {
-		vertices = await nm( vertices, measureAsync, a, g, r, s );
+		vertices = await nmAsync( vertices, measureAsync, a, g, r, s );
 		yield vertices;
 	}
 };
-*/
-// for-await-of syntax is currently not supported by node.js
-const nmAsyncGen = null;
 
 // export { nm, nmAsync, nmCallback, nmGen, nmAsyncGen };
 module.exports = { nm, nmAsync, nmCallback, nmGen, nmAsyncGen };
