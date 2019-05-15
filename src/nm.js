@@ -18,20 +18,20 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	// deduplicate and order
 	vertices = vertices.slice().sort( ( a, b ) => measure( a ) - measure( b ) );
 
-	let best = vertices[ 0 ],
+	const best = vertices[ 0 ],
 		worser = vertices[ vertices.length - 2 ],
 		worst = vertices[ vertices.length - 1 ];
 
 	// centralize
 	/** @type {number[]} */
-	let centroid = m.mean( vertices.slice( 0, -1 ), 0 );
+	const centroid = m.mean( vertices.slice( 0, -1 ), 0 );
 
 	// reflection
 	/** @type {number[]} */
 	// @ts-ignore
-	let mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
+	const mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
 
-	let bestWeight = measure( best ),
+	const bestWeight = measure( best ),
 		worserWeight = measure( worser ),
 		worstWeight = measure( worst ),
 		mirrorWeight = measure( mirror );
@@ -42,8 +42,8 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 		// expansion
 		/** @type {number[]} */
 		// @ts-ignore
-		let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
-		let expansionWeight = measure( expansion );
+		const expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
+		const expansionWeight = measure( expansion );
 
 		if ( expansionWeight < mirrorWeight ) {
 			vertices.splice( vertices.length - 1, 1, expansion );
@@ -54,8 +54,8 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 		// contraction
 		/** @type {number[]} */
 		// @ts-ignore
-		let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) )
-		let contractionWeight = measure( contraction );
+		const contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) )
+		const contractionWeight = measure( contraction );
 
 		if ( contractionWeight < worstWeight ) {
 			vertices.splice( vertices.length - 1, 1, contraction );
@@ -85,7 +85,7 @@ function nm( vertices, measure, a = 1, g = 2, r = 0.5, s = 0.5 ) {
  */
 async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	// order
-	let weights = new Map();
+	const weights = new Map();
 
 	await Promise.all( vertices.map( async vertex =>
 		weights.set( vertex, await measureAsync( vertex ) )
@@ -94,20 +94,20 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 	// deduplicate
 	vertices = vertices.slice().sort( ( a, b ) => weights.get( a ) - weights.get( b ) );
 
-	let best = vertices[ 0 ],
+	const best = vertices[ 0 ],
 		worser = vertices[ vertices.length - 2 ],
 		worst = vertices[ vertices.length - 1 ];
 
 	// centralize
 	/** @type {number[]} */
-	let centroid = m.mean( vertices.slice( 0, -1 ), 0 );
+	const centroid = m.mean( vertices.slice( 0, -1 ), 0 );
 
 	// reflection
 	/** @type {number[]} */
 	// @ts-ignore
-	let mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
+	const mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
 
-	let bestWeight = weights.get( best ),
+	const bestWeight = weights.get( best ),
 		worserWeight = weights.get( worser ),
 		worstWeight = weights.get( worst ),
 		mirrorWeight = await measureAsync( mirror );
@@ -118,8 +118,8 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 		// expansion
 		/** @type {number[]} */
 		// @ts-ignore
-		let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
-		let expansionWeight = await measureAsync( expansion );
+		const expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
+		const expansionWeight = await measureAsync( expansion );
 
 		if ( expansionWeight < mirrorWeight ) {
 			vertices.splice( vertices.length - 1, 1, expansion );
@@ -130,8 +130,8 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
 		// contraction
 		/** @type {number[]} */
 		// @ts-ignore
-		let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) );
-		let contractionWeight = await measureAsync( contraction );
+		const contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) );
+		const contractionWeight = await measureAsync( contraction );
 
 		if ( contractionWeight < worstWeight ) {
 			vertices.splice( vertices.length - 1, 1, contraction );
@@ -165,7 +165,8 @@ async function nmAsync( vertices, measureAsync, a = 1, g = 2, r = 0.5, s = 0.5 )
  */
 function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5, s = 0.5 ) {
 	// order
-	let weights = new Map(), len = vertices.length;
+	const weights = new Map();
+	let len = vertices.length;
 
 	vertices.forEach( vertex => measureCallback( vertex, ( error, weight ) => {
 		if ( error ) {
@@ -178,20 +179,20 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 				// deduplicate
 				vertices = vertices.slice().sort( ( a, b ) => weights.get( a ) - weights.get( b ) );
 
-				let best = vertices[ 0 ],
+				const best = vertices[ 0 ],
 					worser = vertices[ vertices.length - 2 ],
 					worst = vertices[ vertices.length - 1 ];
 
 				// centralize
 				/** @type {number[]} */
-				let centroid = m.mean( vertices.slice( 0, -1 ), 0 );
+				const centroid = m.mean( vertices.slice( 0, -1 ), 0 );
 
 				// reflection
 				/** @type {number[]} */
 				// @ts-ignore
-				let mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
+				const mirror = m.add( centroid, m.multiply( a, m.subtract( centroid, worst ) ) );
 
-				let bestWeight = weights.get( best ),
+				const bestWeight = weights.get( best ),
 					worserWeight = weights.get( worser ),
 					worstWeight = weights.get( worst );
 
@@ -207,7 +208,7 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 							// expansion
 							/** @type {number[]} */
 							// @ts-ignore
-							let expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
+							const expansion = m.add( centroid, m.multiply( g, m.subtract( mirror, centroid ) ) );
 
 							measureCallback( expansion, ( error, expansionWeight ) => {
 								if ( error ) {
@@ -226,7 +227,7 @@ function nmCallback( vertices, measureCallback, callback, a = 1, g = 2, r = 0.5,
 							// contraction
 							/** @type {number[]} */
 							// @ts-ignore
-							let contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) );
+							const contraction = m.add( centroid, m.multiply( r, m.subtract( worst, centroid ) ) );
 
 							measureCallback( contraction, ( error, contractionWeight ) => {
 								if ( error ) {
