@@ -9,6 +9,6 @@
 	"author": "xymopen",
 	"license": "BSD 2-Causes",
 	"dependencies": {
-		"mathjs": "^3.13.3"
+		"mathjs": "^7.5.1"
 	}
 }
